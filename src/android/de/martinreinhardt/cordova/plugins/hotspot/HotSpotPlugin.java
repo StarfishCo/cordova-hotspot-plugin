@@ -679,7 +679,6 @@ public class HotSpotPlugin extends CordovaPlugin {
           result.put("BSSID", scanResult.BSSID);
           result.put("frequency", scanResult.frequency);
           result.put("level", scanResult.level);
-          result.put("timestamp", String.valueOf(scanResult.timestamp));
           result.put("capabilities", scanResult.capabilities);
           results.put(result);
         }
