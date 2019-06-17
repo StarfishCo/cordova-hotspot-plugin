@@ -617,10 +617,12 @@ public class WifiHotSpots {
      */
     public void addWifiNetwork(String netSSID, String netPass, String netType) {
         WifiConfiguration wifiConf = new WifiConfiguration();
+        int res;
+        wifiConf.hiddenSSID = true;
         if (netType.equalsIgnoreCase("OPEN")) {
             wifiConf.SSID = "\"" + netSSID + "\"";
             wifiConf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-            mWifiManager.addNetwork(wifiConf);
+            res = mWifiManager.addNetwork(wifiConf);
             mWifiManager.saveConfiguration();
         } else if (netType.equalsIgnoreCase("WEP")) {
             wifiConf.SSID = "\"" + netSSID + "\"";
@@ -628,12 +630,11 @@ public class WifiHotSpots {
             wifiConf.wepTxKeyIndex = 0;
             wifiConf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
             wifiConf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
-            mWifiManager.addNetwork(wifiConf);
+            res = mWifiManager.addNetwork(wifiConf);
             mWifiManager.saveConfiguration();
         } else {
             wifiConf.SSID = "\"" + netSSID + "\"";
             wifiConf.preSharedKey = "\"" + netPass + "\"";
-            wifiConf.hiddenSSID = false;
             wifiConf.status = WifiConfiguration.Status.ENABLED;
             wifiConf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
             wifiConf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
@@ -642,9 +643,16 @@ public class WifiHotSpots {
             wifiConf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
             wifiConf.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
             wifiConf.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
-            mWifiManager.addNetwork(wifiConf);
+            res = mWifiManager.addNetwork(wifiConf);
             mWifiManager.saveConfiguration();
         }
+
+        if (res == -1) {
+            res = getExistingNetworkId(netSSID);
+        }
+        mWifiManager.disconnect();
+        mWifiManager.enableNetwork(res, true);
+        mWifiManager.reconnect();
     }
 
     /**

@@ -716,8 +716,25 @@ public class HotSpotPlugin extends CordovaPlugin {
     final String mode = args.getString(2);
     final Activity activity = this.cordova.getActivity();
     WifiHotSpots hotspot = new WifiHotSpots(activity);
-    hotspot.addWifiNetwork(ssid, password, mode);
-    callback.success();
+    try {
+      hotspot.addWifiNetwork(ssid, password, mode);
+      int retry = 130;
+      boolean connected = false;
+      // Wait to connect
+      while (retry > 0 && !connected) {
+        connected = hotspot.isConnectedToAP();
+        retry--;
+        Thread.sleep(100);
+      }
+      if (connected) {
+        callback.success("Connection was successful");
+      } else {
+        callback.error("Connection was not successful");
+      }
+    } catch (Exception e) {
+      Log.e(LOG_TAG, "Got unknown error during hotspot connect", e);
+      callback.error("Hotspot connect failed.");
+    }
   }
 
   public void isHotspotEnabled(final CallbackContext callback) {
