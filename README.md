@@ -38,6 +38,33 @@ See [here](./PLUGIN_USAGE.MD#cordova.plugins.hotspot) for complete API reference
 For Ionic Guidance see [here](https://github.com/hypery2k/cordova-hotspot-plugin/wiki/Ionic-usage).
 You need to make sure that you have the right [Android permissions](https://github.com/hypery2k/cordova-hotspot-plugin/wiki/Android-Configuration).
 
+# Custom Changes
+
+## getConfiguredNetworks()
+This method was added to expose the configured networks to JS, the full docs for this method is [here](https://developer.android.com/reference/android/net/wifi/WifiManager.html#getConfiguredNetworks()
+)
+
+### How to use
+```js
+    // Plugin instance
+    const hotSpotPlugin = window['cordova'].plugins.hotspot;
+
+    hotSpotPlugin.getConfiguredNetworks((err, networksList) => {
+        console.log(networksList);
+        /**
+           [
+               {
+                   SSID: string
+                   hiddenSSID: boolean
+                   networkId: number
+                   preSharedKey: string
+                   status: string
+               }
+           ]
+        */
+    });
+```
+
 ## Dev
 
 ### To run the tests
