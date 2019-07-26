@@ -49,7 +49,7 @@ This method was added to expose the configured networks to JS, the full docs for
     // Plugin instance
     const hotSpotPlugin = window['cordova'].plugins.hotspot;
 
-    hotSpotPlugin.getConfiguredNetworks((err, networksList) => {
+    hotSpotPlugin.getConfiguredNetworks((networksList) => {
         console.log(networksList);
         /**
            [
@@ -62,6 +62,8 @@ This method was added to expose the configured networks to JS, the full docs for
                }
            ]
         */
+    }, (err) => {
+        console.log(err);
     });
 ```
 
