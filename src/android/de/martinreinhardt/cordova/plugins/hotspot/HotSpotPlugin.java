@@ -686,7 +686,7 @@ public class HotSpotPlugin extends CordovaPlugin {
 
         if (networks != null) {
             for (WifiConfiguration wifiConfig : networks) {
-                networksArray.put(toJSON(wifiConfig));
+                networksArray.put(configToJSON(wifiConfig));
             }
         }
 
@@ -700,7 +700,7 @@ public class HotSpotPlugin extends CordovaPlugin {
      * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.html
      * 
      */
-    private static JSONObject toJSON(WifiConfiguration wifiConfig) throws JSONException {
+    private static JSONObject configToJSON(WifiConfiguration wifiConfig) throws JSONException {
         if(wifiConfig == null) return null;
 
         JSONObject json = new JSONObject();
