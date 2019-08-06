@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -290,6 +291,16 @@ public class HotSpotPlugin extends CordovaPlugin {
         public void run(JSONArray args, CallbackContext callback) throws Exception {
           scanWifiByLevel(callback);
         }
+      }, rawArgs, callback);
+      return true;
+    }
+
+    if ("getConfiguredNetworks".equals(action)) {
+      threadhelper(new HotspotFunction() {
+          @Override
+          public void run(JSONArray args, CallbackContext callback) throws Exception {
+              getConfiguredNetworks(callback);
+          }
       }, rawArgs, callback);
       return true;
     }
@@ -690,6 +701,61 @@ public class HotSpotPlugin extends CordovaPlugin {
     } catch (Exception e) {
       Log.e(LOG_TAG, "Wifi scan failed", e);
       callback.error("Wifi scan failed.");
+    }
+  }
+
+  /**
+   * Returns a list of the configured networks on the device
+  */
+  private void getConfiguredNetworks(CallbackContext callback) throws JSONException {
+    Log.i(LOG_TAG, "Running getConfiguredNetworks() ");
+    WifiManager wifiManager = (WifiManager) this.cordova.getActivity()
+      .getApplication()
+      .getApplicationContext()
+      .getSystemService(Context.WIFI_SERVICE);
+    List<WifiConfiguration> networks = wifiManager.getConfiguredNetworks();
+    JSONArray networksArray = new JSONArray();
+
+    if (networks != null) {
+      for (WifiConfiguration wifiConfig : networks) {
+        networksArray.put(configToJSON(wifiConfig));
+      }
+    }
+
+    callback.success(networksArray);
+  }
+
+  /**
+   * Parse the WifiConfiguration object to JSON,
+   * it's parsing only the necessary fields, the full list is in:
+   * https://developer.android.com/reference/android/net/wifi/WifiManager.html#getConfiguredNetworks()
+   * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.html
+   * 
+   */
+  private static JSONObject configToJSON(WifiConfiguration wifiConfig) throws JSONException {
+    if(wifiConfig == null) return null;
+
+    JSONObject json = new JSONObject();
+    json.put("BSSID", wifiConfig.BSSID);
+    json.put("SSID", wifiConfig.SSID);
+    json.put("hiddenSSID", wifiConfig.hiddenSSID);
+    json.put("networkId", wifiConfig.networkId);
+    json.put("status", toStringWifiConfigurationStatus(wifiConfig.status));
+    json.put("preSharedKey", wifiConfig.preSharedKey == null ? JSONObject.NULL : wifiConfig.preSharedKey);
+    
+    return json;
+  }
+
+  /**
+   * Parse the wifi status to string
+   * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.Status.html
+   */
+  private static String toStringWifiConfigurationStatus(int status) {
+    switch(status) {
+      case WifiConfiguration.Status.CURRENT: return "CURRENT";
+      case WifiConfiguration.Status.DISABLED: return "DISABLED";
+      case WifiConfiguration.Status.ENABLED: return "ENABLED";
+      default: return null;
     }
   }
 
