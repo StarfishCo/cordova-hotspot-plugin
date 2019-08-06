@@ -461,6 +461,19 @@ HotSpotPlugin.prototype = {
             successCB(false);
         }, 'HotSpotPlugin', 'isWifiDirectSupported', []);
     },
+     /**
+     * Get configured networks
+     *
+     * @param {getConfiguredNetworksCallback} successCB
+     *      A callback function to be called when networks exists
+     * @param {errorCallback} errorCB
+     *      An error callback
+     */
+    getConfiguredNetworks: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, 'HotSpotPlugin', 'getConfiguredNetworks', []);
+    },
     /**
      * A callback function to be called when scan is started
      *
