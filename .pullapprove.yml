@@ -1,0 +1,2 @@
+version: 3
+extends: "https://api.github.com/repos/starfishco/.github/contents/PullApprove/base.pullapprove.yml?ref=master"
