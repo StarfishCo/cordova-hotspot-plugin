@@ -47,6 +47,8 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -297,10 +299,10 @@ public class HotSpotPlugin extends CordovaPlugin {
 
     if ("getConfiguredNetworks".equals(action)) {
       threadhelper(new HotspotFunction() {
-          @Override
-          public void run(JSONArray args, CallbackContext callback) throws Exception {
-              getConfiguredNetworks(callback);
-          }
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          getConfiguredNetworks(callback);
+        }
       }, rawArgs, callback);
       return true;
     }
@@ -347,6 +349,20 @@ public class HotSpotPlugin extends CordovaPlugin {
             callback.success();
           } else {
             callback.error("Device is not connected to internet via WiFi");
+          }
+        }
+      }, rawArgs, callback);
+      return true;
+    }
+
+    if ("isConnectedToInternetViaEthernet".equals(action)) {
+      threadhelper(new HotspotFunction() {
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          if (isConnectedToInternetViaEthernet()) {
+            callback.success();
+          } else {
+            callback.error("Device is not connected to internet via Ethernet");
           }
         }
       }, rawArgs, callback);
@@ -706,13 +722,11 @@ public class HotSpotPlugin extends CordovaPlugin {
 
   /**
    * Returns a list of the configured networks on the device
-  */
+   */
   private void getConfiguredNetworks(CallbackContext callback) throws JSONException {
     Log.i(LOG_TAG, "Running getConfiguredNetworks() ");
-    WifiManager wifiManager = (WifiManager) this.cordova.getActivity()
-      .getApplication()
-      .getApplicationContext()
-      .getSystemService(Context.WIFI_SERVICE);
+    WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication().getApplicationContext()
+        .getSystemService(Context.WIFI_SERVICE);
     List<WifiConfiguration> networks = wifiManager.getConfiguredNetworks();
     JSONArray networksArray = new JSONArray();
 
@@ -726,14 +740,15 @@ public class HotSpotPlugin extends CordovaPlugin {
   }
 
   /**
-   * Parse the WifiConfiguration object to JSON,
-   * it's parsing only the necessary fields, the full list is in:
+   * Parse the WifiConfiguration object to JSON, it's parsing only the necessary
+   * fields, the full list is in:
    * https://developer.android.com/reference/android/net/wifi/WifiManager.html#getConfiguredNetworks()
    * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.html
    * 
    */
   private static JSONObject configToJSON(WifiConfiguration wifiConfig) throws JSONException {
-    if(wifiConfig == null) return null;
+    if (wifiConfig == null)
+      return null;
 
     JSONObject json = new JSONObject();
     json.put("BSSID", wifiConfig.BSSID);
@@ -742,7 +757,7 @@ public class HotSpotPlugin extends CordovaPlugin {
     json.put("networkId", wifiConfig.networkId);
     json.put("status", toStringWifiConfigurationStatus(wifiConfig.status));
     json.put("preSharedKey", wifiConfig.preSharedKey == null ? JSONObject.NULL : wifiConfig.preSharedKey);
-    
+
     return json;
   }
 
@@ -751,11 +766,15 @@ public class HotSpotPlugin extends CordovaPlugin {
    * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.Status.html
    */
   private static String toStringWifiConfigurationStatus(int status) {
-    switch(status) {
-      case WifiConfiguration.Status.CURRENT: return "CURRENT";
-      case WifiConfiguration.Status.DISABLED: return "DISABLED";
-      case WifiConfiguration.Status.ENABLED: return "ENABLED";
-      default: return null;
+    switch (status) {
+    case WifiConfiguration.Status.CURRENT:
+      return "CURRENT";
+    case WifiConfiguration.Status.DISABLED:
+      return "DISABLED";
+    case WifiConfiguration.Status.ENABLED:
+      return "ENABLED";
+    default:
+      return null;
     }
   }
 
@@ -1007,6 +1026,23 @@ public class HotSpotPlugin extends CordovaPlugin {
     WifiStatus wu = new WifiStatus(this.cordova.getActivity());
     return isConnectedToWifi() && wu.isConnectedToInternet();
 
+  }
+
+  public boolean isConnectedToInternetViaEthernet() {
+    ConnectivityManager connectivityManager = (ConnectivityManager) cordova.getActivity()
+        .getSystemService(Context.CONNECTIVITY_SERVICE);
+    NetworkInfo[] infos = connectivityManager.getAllNetworkInfo();
+    boolean isEthernetConnected = false;
+    for (int i = 0; i < infos.length; i++) {
+      NetworkInfo info = infos[i];
+      String type = info.getTypeName();
+      boolean isConnected = info.getState() == NetworkInfo.State.CONNECTED;
+      if (info.getType() == ConnectivityManager.TYPE_ETHERNET && isConnected) {
+        isEthernetConnected = true;
+        break;
+      }
+    }
+    return isEthernetConnected;
   }
 
   private boolean isConnectedToWifi() {
