@@ -359,11 +359,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       threadhelper(new HotspotFunction() {
         @Override
         public void run(JSONArray args, CallbackContext callback) throws Exception {
-          if (isConnectedToInternetViaEthernet()) {
-            callback.success();
-          } else {
-            callback.error("Device is not connected to internet via Ethernet");
-          }
+          isConnectedToInternetViaEthernet(callback);
         }
       }, rawArgs, callback);
       return true;
@@ -1028,10 +1024,11 @@ public class HotSpotPlugin extends CordovaPlugin {
 
   }
 
-  public boolean isConnectedToInternetViaEthernet() {
+  public void isConnectedToInternetViaEthernet(CallbackContext callback) throws JSONException {
     ConnectivityManager connectivityManager = (ConnectivityManager) cordova.getActivity()
         .getSystemService(Context.CONNECTIVITY_SERVICE);
     NetworkInfo[] infos = connectivityManager.getAllNetworkInfo();
+    JSONObject json = new JSONObject();
     boolean isEthernetConnected = false;
     for (int i = 0; i < infos.length; i++) {
       NetworkInfo info = infos[i];
@@ -1042,7 +1039,8 @@ public class HotSpotPlugin extends CordovaPlugin {
         break;
       }
     }
-    return isEthernetConnected;
+    json.put("isEthernetConnected", isEthernetConnected);
+    callback.success(json);
   }
 
   private boolean isConnectedToWifi() {

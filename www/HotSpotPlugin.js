@@ -407,13 +407,9 @@ HotSpotPlugin.prototype = {
    *      An error callback
    */
   isConnectedToInternetViaEthernet: function(successCB, errorCB) {
-    cordova.exec(
-      function() {
-        successCB(true);
-      },
-      function() {
-        successCB(false);
-      },
+    cordova.exec(successCB ,function (err) {
+            errorCB(err);
+        },
       "HotSpotPlugin",
       "isConnectedToInternetViaEthernet",
       []
