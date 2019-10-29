@@ -398,6 +398,23 @@ HotSpotPlugin.prototype = {
             successCB(false);
         }, 'HotSpotPlugin', 'isConnectedToInternetViaWifi', []);
     },
+   /**
+   * Check if connection to internet is active via ethernet
+   *
+   * @param {isConnectedToInternetViaEthernetCallback} successCB
+   *      A callback function to be called with the result
+   * @param {errorCallback} errorCB
+   *      An error callback
+   */
+  isConnectedToInternetViaEthernet: function(successCB, errorCB) {
+    cordova.exec(successCB ,function (err) {
+            errorCB(err);
+        },
+      "HotSpotPlugin",
+      "isConnectedToInternetViaEthernet",
+      []
+    );
+  },
     /**
      * A callback function to be called when WiFi is enabled
      *
