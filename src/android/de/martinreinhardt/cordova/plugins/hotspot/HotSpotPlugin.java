@@ -493,6 +493,16 @@ public class HotSpotPlugin extends CordovaPlugin {
       return true;
     }
 
+    if ("isCaptivePortalConnection".equals(action)) {
+      threadhelper(new HotspotFunction() {
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          isCaptivePortalConnection(callback);
+        }
+      }, rawArgs, callback);
+      return true;
+    }
+
     if ("connectToWifiAuthEncrypt".equals(action)) {
       threadhelper(new HotspotFunction() {
         @Override
@@ -740,7 +750,7 @@ public class HotSpotPlugin extends CordovaPlugin {
    * fields, the full list is in:
    * https://developer.android.com/reference/android/net/wifi/WifiManager.html#getConfiguredNetworks()
    * https://developer.android.com/reference/android/net/wifi/WifiConfiguration.html
-   * 
+   *
    */
   private static JSONObject configToJSON(WifiConfiguration wifiConfig) throws JSONException {
     if (wifiConfig == null)
@@ -962,7 +972,7 @@ public class HotSpotPlugin extends CordovaPlugin {
   }
 
   private boolean connectToWifiNetwork(final CallbackContext callback, final String ssid, final String password,
-      final Integer authentication, final Integer[] encryption) {
+    final Integer authentication, final Integer[] encryption) {
     final Activity activity = this.cordova.getActivity();
     WifiHotSpots hotspot = new WifiHotSpots(activity);
     try {
@@ -988,6 +998,25 @@ public class HotSpotPlugin extends CordovaPlugin {
       callback.error("Hotspot connect failed.");
     }
     return true;
+  }
+
+  /**
+   * Determines if connection is a captive portal and returns true to app if it is.
+   * Otherwise, returns false.
+   */
+  private void isCaptivePortalConnection(final CallbackContext callback) {
+    try {
+      final Activity activity = this.cordova.getActivity();
+      WifiHotSpots hotspot = new WifiHotSpots(activity);
+      boolean isCaptivePortal = hotspot.isCaptivePortalConnection();
+      JSONObject result = new JSONObject();
+      result.put("isCaptivePortal", isCaptivePortal);
+      Log.d("RAVEN", "Is captive portal - " + isCaptivePortal);
+      callback.success(result);
+    } catch (JSONException e) {
+      Log.d("RAVEN", "ERROR - failed to determine if network had a captive portal. Assuming that it doesn't.")
+      callback.success(false);
+    }
   }
 
   public boolean isHotspotEnabled() {
