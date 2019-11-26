@@ -263,17 +263,8 @@ HotSpotPlugin.prototype = {
         }, "HotSpotPlugin", "connectToWifi", [ssid, password]);
     },
     /**
-     * A callback function to be called when connected successful
+     * Determine if current connection is a captive portal
      *
-     * @callback connectToWifiCallback
-     */
-    /**
-     * Connect to a WiFi network
-     *
-     * @param {string} ssid
-     *      SSID to connect
-     * @param {string} password
-     *      password to use
      * @param {connectToWifiCallback} successCB
      *      A callback function to be called when connected successful
      * @param {errorCallback} errorCB
