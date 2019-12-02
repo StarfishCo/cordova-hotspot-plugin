@@ -263,6 +263,19 @@ HotSpotPlugin.prototype = {
         }, "HotSpotPlugin", "connectToWifi", [ssid, password]);
     },
     /**
+     * Determine if current connection is a captive portal
+     *
+     * @param {connectToWifiCallback} successCB
+     *      A callback function to be called when connected successful
+     * @param {errorCallback} errorCB
+     *      A callback function to be called when connection was not successful
+     */
+    isCaptivePortalConnection: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "isCaptivePortalConnection", []);
+    },
+    /**
      * A callback function to be called when connected successful
      *
      * @callback connectToWifiAuthEncryptCallback

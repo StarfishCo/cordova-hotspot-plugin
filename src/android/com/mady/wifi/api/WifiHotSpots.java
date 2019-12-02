@@ -19,6 +19,8 @@ import android.util.Log;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,7 @@ public class WifiHotSpots {
     WifiInfo mWifiInfo;
     Context mContext;
     List<ScanResult> mResults;
+
     /**
      * Get WiFi password From wpa_supplicant.conf file By SSID
      *
@@ -245,6 +248,33 @@ public class WifiHotSpots {
         }
         isConnectToHotSpotRunning = false;
         return false;
+    }
+
+    /**
+     * Determines if current connection is a captive portal by checking if we get a 204 response
+     * from google. If we do not, we can assume this is do to a captive portal instead returning a 200 response.
+     * Logic taken from https://stackoverflow.com/questions/13958614/how-to-check-for-unrestricted-internet-access-captive-portal-detection
+     */
+    public boolean isCaptivePortalConnection() {
+        HttpURLConnection urlConnection = null;
+        try {
+            URL url = new URL("http://clients3.google.com/generate_204");
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setInstanceFollowRedirects(false);
+            urlConnection.setConnectTimeout(10000);
+            urlConnection.setReadTimeout(10000);
+            urlConnection.setUseCaches(false);
+            urlConnection.getInputStream();
+            // We got a valid response, but not from the real google
+            return urlConnection.getResponseCode() != 204;
+        } catch (IOException e) {
+            Log.d("RAVEN", "Captive portal check - probably not a portal: exception " + e.toString());
+            return false;
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+        }
     }
 
     private int getExistingNetworkId(String SSID) {
