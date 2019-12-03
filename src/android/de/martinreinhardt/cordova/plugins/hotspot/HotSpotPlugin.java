@@ -1004,7 +1004,7 @@ public class HotSpotPlugin extends CordovaPlugin {
    * Determines if connection is a captive portal and returns true to app if it is.
    * Otherwise, returns false.
    */
-  private void isCaptivePortalConnection(final CallbackContext callback) {
+  private void isCaptivePortalConnection(final CallbackContext callback) throws JSONException {
     try {
       final Activity activity = this.cordova.getActivity();
       WifiHotSpots hotspot = new WifiHotSpots(activity);
@@ -1014,8 +1014,10 @@ public class HotSpotPlugin extends CordovaPlugin {
       Log.d("RAVEN", "Is captive portal - " + isCaptivePortal);
       callback.success(result);
     } catch (JSONException e) {
-      Log.d("RAVEN", "ERROR - failed to determine if network had a captive portal. Assuming that it doesn't.")
-      callback.success(false);
+      Log.d("RAVEN", "ERROR - failed to determine if network had a captive portal. Assuming that it doesn't.");
+      JSONObject result = new JSONObject();
+      result.put("isCaptivePortal", false);
+      callback.success(result);
     }
   }
 
