@@ -253,7 +253,7 @@ public class WifiHotSpots {
     /**
      * This function works under the assumption that we have already determined that we are connected to a valid network.
      * Determines if current connection is a captive portal by checking if we can access Apple's captive portal detection
-     * page. If we receive 'Success' in the request's response body, there is not
+     * page. If we receive 'Success' in the request's response body, there is no captive portal
      */
     public boolean isCaptivePortalConnection() {
         InputStream stream = null;
