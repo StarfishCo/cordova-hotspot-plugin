@@ -29,17 +29,24 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 import com.mady.wifi.api.WifiAddresses;
 import com.mady.wifi.api.WifiHotSpots;
 import com.mady.wifi.api.WifiStatus;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PermissionHelper;
@@ -47,14 +54,7 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class HotSpotPlugin extends CordovaPlugin {
 
@@ -1014,7 +1014,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       Log.d("RAVEN", "Is captive portal - " + isCaptivePortal);
       callback.success(result);
     } catch (JSONException e) {
-      Log.d("RAVEN", "ERROR - failed to determine if network had a captive portal. Assuming that it doesn't.");
+      Log.d("RAVEN", "ERROR - failed to determine if network had a captive portal. Assuming that it doesn't. " + e.getMessage());
       JSONObject result = new JSONObject();
       result.put("isCaptivePortal", false);
       callback.success(result);
@@ -1135,6 +1135,7 @@ public class HotSpotPlugin extends CordovaPlugin {
    */
   private void threadhelper(final HotspotFunction f, final String rawArgs, final CallbackContext callbackContext) {
     cordova.getThreadPool().execute(new Runnable() {
+      @Override
       public void run() {
         try {
           JSONArray args = new JSONArray(rawArgs);
