@@ -281,13 +281,13 @@ public class WifiHotSpots {
             Log.d("RAVEN", testUrl + " returned 'Success' in its response body. Not a captive portal.");
         } catch (IOException e) {
             Log.d("RAVEN", "Captive portal check failed for " + testUrl + " - probably not a portal: exception " + e.getMessage());
-            return false;
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
                 urlConnection = null;
             }
         }
+        return false;
     }
 
     private int getExistingNetworkId(String SSID) {
