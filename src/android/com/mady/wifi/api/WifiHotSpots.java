@@ -16,7 +16,6 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.util.Log;
-
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
@@ -25,6 +24,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
 
 public class WifiHotSpots {
     /**
@@ -251,30 +251,43 @@ public class WifiHotSpots {
     }
 
     /**
-     * Determines if current connection is a captive portal by checking if we get a 204 response
-     * from google. If we do not, we can assume this is do to a captive portal instead returning a 200 response.
-     * Logic taken from https://stackoverflow.com/questions/13958614/how-to-check-for-unrestricted-internet-access-captive-portal-detection
+     * This function works under the assumption that we have already determined that we are connected to a valid network.
+     * Determines if current connection is a captive portal by checking if we can access Apple's captive portal detection
+     * page. If we receive 'Success' in the request's response body, there is no captive portal
      */
     public boolean isCaptivePortalConnection() {
+        InputStream stream = null;
+        BufferedReader br = null;
+        InputStreamReader sr = null;
         HttpURLConnection urlConnection = null;
+        String responseBody = null;
+        String testUrl = "http://captive.apple.com/hotspot-detect.html";
         try {
-            URL url = new URL("http://clients3.google.com/generate_204");
+            URL url = new URL(testUrl);
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setInstanceFollowRedirects(false);
             urlConnection.setConnectTimeout(10000);
             urlConnection.setReadTimeout(10000);
             urlConnection.setUseCaches(false);
-            urlConnection.getInputStream();
-            // We got a valid response, but not from the real google
-            return urlConnection.getResponseCode() != 204;
+
+            stream = urlConnection.getInputStream(); // input stream is null for non 200 responses
+            if (stream != null) sr = new InputStreamReader(stream);
+            if (sr != null) br = new BufferedReader(sr);
+            if (br != null) responseBody = br.readLine(); // Success is in first line of input stream
+
+            // if no response body or it doesn't contain "Success", the request was probably blocked by a captive portal
+            if (responseBody == null || !responseBody.contains("Success")) return true;
+
+            Log.d("RAVEN", testUrl + " returned 'Success' in its response body. Not a captive portal.");
         } catch (IOException e) {
-            Log.d("RAVEN", "Captive portal check - probably not a portal: exception " + e.toString());
-            return false;
+            Log.d("RAVEN", "Captive portal check failed for " + testUrl + " - probably not a portal: exception " + e.getMessage());
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
+                urlConnection = null;
             }
         }
+        return false;
     }
 
     private int getExistingNetworkId(String SSID) {
