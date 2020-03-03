@@ -54,6 +54,9 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.net.NetworkInterface;
+import java.util.Collections;
+import java.net.Inet4Address;
 
 
 public class HotSpotPlugin extends CordovaPlugin {
@@ -360,6 +363,16 @@ public class HotSpotPlugin extends CordovaPlugin {
         @Override
         public void run(JSONArray args, CallbackContext callback) throws Exception {
           isConnectedToInternetViaEthernet(callback);
+        }
+      }, rawArgs, callback);
+      return true;
+    }
+
+    if ("getEthernetIpAddress".equals(action)) {
+      threadhelper(new HotspotFunction() {
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          getEthernetIpAddress(callback);
         }
       }, rawArgs, callback);
       return true;
@@ -1074,6 +1087,26 @@ public class HotSpotPlugin extends CordovaPlugin {
     callback.success(json);
   }
 
+  public void getEthernetIpAddress(CallbackContext cb){
+    try{
+      JSONObject json = new JSONObject();
+      NetworkInterface networkInterface = NetworkInterface.getByName("eth0");
+      json.put("ipAddress", null);
+      if(networkInterface != null){
+         List<InetAddress> addresses = Collections.list(networkInterface.getInetAddresses());
+         for(InetAddress address: addresses){
+           if(address instanceof Inet4Address){
+             json.put("ipAddress", address.getHostAddress().toUpperCase());
+           }
+         }
+      }
+      cb.success(json);
+    }
+    catch(Exception e){
+      Log.d(LOG_TAG, e.getMessage());
+      cb.error(e.getMessage());
+    }
+  }
   private boolean isConnectedToWifi() {
     WifiStatus wu = new WifiStatus(this.cordova.getActivity());
     return wu.checkWifi(wu.DATA_BY_WIFI);

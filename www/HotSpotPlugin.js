@@ -73,10 +73,10 @@ HotSpotPlugin.prototype = {
      *
      * @param  {errorCallback} errorCB
      */
-    getWriteSettings: function(successCB,errorCB) {
+    getWriteSettings: function (successCB, errorCB) {
         cordova.exec(
-            function(val){
-                if(val === 1)
+            function (val) {
+                if (val === 1)
                     successCB(true);
                 else
                     successCB(false);
@@ -95,7 +95,7 @@ HotSpotPlugin.prototype = {
      * @param  {errorCB} error callback
      *      A callback function to be called when errors occurr
      */
-    requestWriteSettings: function(successCB,errorCB) {
+    requestWriteSettings: function (successCB, errorCB) {
         cordova.exec(
             successCB,
             errorCB,
@@ -411,23 +411,33 @@ HotSpotPlugin.prototype = {
             successCB(false);
         }, 'HotSpotPlugin', 'isConnectedToInternetViaWifi', []);
     },
-   /**
-   * Check if connection to internet is active via ethernet
-   *
-   * @param {isConnectedToInternetViaEthernetCallback} successCB
-   *      A callback function to be called with the result
-   * @param {errorCallback} errorCB
-   *      An error callback
-   */
-  isConnectedToInternetViaEthernet: function(successCB, errorCB) {
-    cordova.exec(successCB ,function (err) {
+    /**
+    * Check if connection to internet is active via ethernet
+    *
+    * @param {isConnectedToInternetViaEthernetCallback} successCB
+    *      A callback function to be called with the result
+    * @param {errorCallback} errorCB
+    *      An error callback
+    */
+    isConnectedToInternetViaEthernet: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
             errorCB(err);
         },
-      "HotSpotPlugin",
-      "isConnectedToInternetViaEthernet",
-      []
-    );
-  },
+            "HotSpotPlugin",
+            "isConnectedToInternetViaEthernet",
+            []
+        );
+    },
+
+    getEthernetIpAddress: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        },
+            "HotSpotPlugin",
+            "getEthernetIpAddress",
+            []
+        );
+    },
     /**
      * A callback function to be called when WiFi is enabled
      *
@@ -491,14 +501,14 @@ HotSpotPlugin.prototype = {
             successCB(false);
         }, 'HotSpotPlugin', 'isWifiDirectSupported', []);
     },
-     /**
-     * Get configured networks
-     *
-     * @param {getConfiguredNetworksCallback} successCB
-     *      A callback function to be called when networks exists
-     * @param {errorCallback} errorCB
-     *      An error callback
-     */
+    /**
+    * Get configured networks
+    *
+    * @param {getConfiguredNetworksCallback} successCB
+    *      A callback function to be called when networks exists
+    * @param {errorCallback} errorCB
+    *      An error callback
+    */
     getConfiguredNetworks: function (successCB, errorCB) {
         cordova.exec(successCB, function (err) {
             errorCB(err);
