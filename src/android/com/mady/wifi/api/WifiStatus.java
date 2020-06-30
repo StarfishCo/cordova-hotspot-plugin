@@ -310,7 +310,7 @@ public class WifiStatus {
         // Any Open port on other machine
         // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
         try {
-            Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + openPort.toString());
+            Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + String.valueOf(openPort));
             try (Socket soc = new Socket()) {
                 // throws IOException if connection cannot be established on port
                 soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
