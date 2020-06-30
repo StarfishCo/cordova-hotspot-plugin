@@ -26,10 +26,8 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.List;
 
 
