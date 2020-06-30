@@ -26,6 +26,10 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 
 
@@ -284,13 +288,39 @@ public class WifiStatus {
             int exit = pro.exitValue();
             if (exit == 0) {
                 return true;
-            } else {
-                //ip address is not reachable
-                return false;
             }
         } catch (IOException e) {
+            Log.d("RAVEN", "ICMP ping error - " + e.getMessage());
         }
-        return false;
+        Log.d("RAVEN", "ICMP ping to " + addr + " failed, trying TCP connection over port 443");
+        if (isReachable(addr, 443, 5000)) return true;
+        Log.d("RAVEN", "TCP connection to  " + addr + " failed, trying TCP connection over port 80");
+        return isReachable(addr, 80, 5000);
+    }
+
+    /**
+     * Checks via TCP connection if we are connected to the internet. More reliable than using native Android 
+     * InetAddress.isReachable functionality because we are allowed to specify port (rather than only using port 7).
+     * Taken from - https://stackoverflow.com/a/34228756/13173970
+     * 
+     * @param addr IP address you want to check
+     * @param openPort port to check for connection
+     * @param timeOutMillis timeout in ms
+     * @return true if the IP address is reachable, false if not
+     */
+    private boolean isReachable(String addr, int openPort, int timeOutMillis) {
+        // Any Open port on other machine
+        // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
+        try {
+            try (Socket soc = new Socket()) {
+                // throws IOException if connection cannot be established on port
+                soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
+            }
+            return true;
+        } catch (IOException e) {
+            Log.d("RAVEN", "TCP connection failure - " + e.getMessage());
+            return false;
+        }
     }
 
     /**
