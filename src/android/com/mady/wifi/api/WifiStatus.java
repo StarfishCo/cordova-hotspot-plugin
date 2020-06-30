@@ -275,6 +275,7 @@ public class WifiStatus {
      */
     public boolean pingCmd(String addr) {
         try {
+            Log.d("RAVEN", "Pinging " + addr);
             String ping = "ping  -c 1 -W 3 " + addr;
             Runtime run = Runtime.getRuntime();
             Process pro = run.exec(ping);
@@ -290,9 +291,8 @@ public class WifiStatus {
         } catch (IOException e) {
             Log.d("RAVEN", "ICMP ping error - " + e.getMessage());
         }
-        Log.d("RAVEN", "ICMP ping to " + addr + " failed, trying TCP connection over port 443");
+        Log.d("RAVEN", "ICMP ping to " + addr + " failed");
         if (isReachable(addr, 443, 5000)) return true;
-        Log.d("RAVEN", "TCP connection to  " + addr + " failed, trying TCP connection over port 80");
         return isReachable(addr, 80, 5000);
     }
 
@@ -310,6 +310,7 @@ public class WifiStatus {
         // Any Open port on other machine
         // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
         try {
+            Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + openPort.toString());
             try (Socket soc = new Socket()) {
                 // throws IOException if connection cannot be established on port
                 soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
