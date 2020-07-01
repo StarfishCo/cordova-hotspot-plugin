@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.List;
+
 
 
 public class WifiStatus {
@@ -292,8 +294,7 @@ public class WifiStatus {
             Log.d("RAVEN", "ICMP ping error - " + e.getMessage());
         }
         Log.d("RAVEN", "ICMP ping to " + addr + " failed");
-        if (isReachable(addr, 443, 5000)) return true;
-        return isReachable(addr, 80, 5000);
+        return isReachable(addr, 443, 5000);
     }
 
     /**
@@ -309,16 +310,21 @@ public class WifiStatus {
     private boolean isReachable(String addr, int openPort, int timeOutMillis) {
         // Any Open port on other machine
         // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
+        Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + String.valueOf(openPort));
+        Socket soc = new Socket();
         try {
-            Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + String.valueOf(openPort));
-            try (Socket soc = new Socket()) {
-                // throws IOException if connection cannot be established on port
-                soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
-            }
+            // throws IOException if connection cannot be established on port
+            soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
             return true;
-        } catch (IOException e) {
+        } catch (IOException | IllegalBlockingModeException | IllegalArgumentException e) {
             Log.d("RAVEN", "TCP connection failure - " + e.getMessage());
             return false;
+        } finally {
+            try {
+                if (!soc.isClosed()) soc.close();
+            } catch (IOException e) {
+                Log.d("RAVEN", "Failed closing socket - " + e.getMessage());
+            }
         }
     }
 
