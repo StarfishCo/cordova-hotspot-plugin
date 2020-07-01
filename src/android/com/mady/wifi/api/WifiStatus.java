@@ -26,7 +26,11 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.List;
+
 
 
 public class WifiStatus {
@@ -273,6 +277,7 @@ public class WifiStatus {
      */
     public boolean pingCmd(String addr) {
         try {
+            Log.d("RAVEN", "Pinging " + addr);
             String ping = "ping  -c 1 -W 3 " + addr;
             Runtime run = Runtime.getRuntime();
             Process pro = run.exec(ping);
@@ -284,13 +289,43 @@ public class WifiStatus {
             int exit = pro.exitValue();
             if (exit == 0) {
                 return true;
-            } else {
-                //ip address is not reachable
-                return false;
             }
         } catch (IOException e) {
+            Log.d("RAVEN", "ICMP ping error - " + e.getMessage());
         }
-        return false;
+        Log.d("RAVEN", "ICMP ping to " + addr + " failed");
+        return isReachable(addr, 443, 5000);
+    }
+
+    /**
+     * Checks via TCP connection if we are connected to the internet. More reliable than using native Android 
+     * InetAddress.isReachable functionality because we are allowed to specify port (rather than only using port 7).
+     * Taken from - https://stackoverflow.com/a/34228756/13173970
+     * 
+     * @param addr IP address you want to check
+     * @param openPort port to check for connection
+     * @param timeOutMillis timeout in ms
+     * @return true if the IP address is reachable, false if not
+     */
+    private boolean isReachable(String addr, int openPort, int timeOutMillis) {
+        // Any Open port on other machine
+        // openPort =  22 - ssh, 80 or 443 - webserver, 25 - mailserver etc.
+        Log.d("RAVEN", "Trying TCP connection to " + addr + " over port " + String.valueOf(openPort));
+        Socket soc = new Socket();
+        try {
+            // throws IOException if connection cannot be established on port
+            soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
+            return true;
+        } catch (IOException | IllegalBlockingModeException | IllegalArgumentException e) {
+            Log.d("RAVEN", "TCP connection failure - " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                if (!soc.isClosed()) soc.close();
+            } catch (IOException e) {
+                Log.d("RAVEN", "Failed closing socket - " + e.getMessage());
+            }
+        }
     }
 
     /**
