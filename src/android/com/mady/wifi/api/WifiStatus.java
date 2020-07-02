@@ -252,17 +252,7 @@ public class WifiStatus {
      * @return true if device connect to Internet or return false if not
      */
     public boolean isConnectedToInternet() {
-        ConnectivityManager connectivity = (ConnectivityManager) mContext
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivity != null) {
-            NetworkInfo info = connectivity.getActiveNetworkInfo();
-            if (info != null) {
-                if (info.isConnected()) {
-                    return pingCmd("www.google.com");
-                }
-            }
-        }
-        return false;
+        return pingCmd("www.google.com");
     }
 
     /**
