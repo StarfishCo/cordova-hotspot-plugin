@@ -589,6 +589,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       result.put("linkSpeed", wifiInfo.getLinkSpeed());
       result.put("IPAddress", intToInetAddress(wifiInfo.getIpAddress())).toString();
       result.put("networkID", wifiInfo.getNetworkId());
+      result.put("MACAddress", wifiInfo.getMacAddress());
       callback.success(result);
     } catch (JSONException e) {
       Log.e(LOG_TAG, "Error during reading connection info.", e);
