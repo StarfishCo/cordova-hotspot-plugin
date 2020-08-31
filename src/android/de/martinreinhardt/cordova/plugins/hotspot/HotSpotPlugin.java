@@ -657,27 +657,32 @@ public class HotSpotPlugin extends CordovaPlugin {
     try {
       Log.i(LOG_TAG, "   Starting WiFi scan.");
       WifiHotSpots hotspot = new WifiHotSpots(activity);
+
       if (isHotspotEnabled()) {
         hotspot.startHotSpot(false);
         Thread.sleep(3000);
       }
+
       if (!isWifiOn()) {
         toggleWifi();
         Thread.sleep(2000);
       }
+
       List<ScanResult> response = getScanResult(hotspot, sortByLevel);
       // if null wait and try again
       if (response == null || response.size() == 0) {
         response = getScanResult(hotspot, sortByLevel);
       }
+
       JSONArray results = new JSONArray();
+
       if (response != null && response.size() > 0) {
         for (ScanResult scanResult : response) {
           JSONObject result = new JSONObject();
           result.put("SSID", scanResult.SSID);
           result.put("BSSID", scanResult.BSSID);
           result.put("frequency", scanResult.frequency);
-          result.put("level", scanResult.level);
+          result.put("level", WifiManager.calculateSignalLevel(scanResult.level, 3));
           result.put("capabilities", scanResult.capabilities);
           results.put(result);
         }
