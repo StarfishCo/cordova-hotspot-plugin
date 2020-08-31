@@ -66,8 +66,6 @@ public class HotSpotPlugin extends CordovaPlugin {
    */
   private static final String LOG_TAG = "HotSpotPlugin";
 
-  public static String[] permissions = { Manifest.permission.ACCESS_FINE_LOCATION };
-
   public static final int REQUEST_CODE_SETTINGS_INTENT = 400;
 
   private CallbackContext callback;
@@ -78,15 +76,6 @@ public class HotSpotPlugin extends CordovaPlugin {
 
   private interface HotspotFunction {
     void run(JSONArray args, CallbackContext callback) throws Exception;
-  }
-
-  public boolean hasPermissions() {
-    for (String p : permissions) {
-      if (!PermissionHelper.hasPermission(this, p)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   /**
@@ -107,47 +96,11 @@ public class HotSpotPlugin extends CordovaPlugin {
     this.callback = callback;
     this.action = action;
     this.rawArgs = rawArgs;
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP + 1) {
-      Class systemClass = Settings.System.class;
-      try {
-        Method canWriteMethod = systemClass.getDeclaredMethod("canWrite", Context.class);
-        boolean retVal = (Boolean) canWriteMethod.invoke(null, this.cordova.getActivity());
-        Log.d(LOG_TAG, "Can Write Settings: " + retVal);
-        if (!retVal && !action.equals("requestWriteSettings") && !action.equals("getWriteSettings")) {
-          // With Android 6.0+/API level>= 23, user can turn on/off permissions as
-          // necessary.
-          // Permissions are explicitely granted during the app runtime.
-          if (Build.VERSION.SDK_INT < 23) {
-            // can't write Settings
-            callback.error("write settings: false");
-            return false;
-          }
-        }
-        this.writeSettings = retVal;
-      } catch (Exception ignored) {
-        Log.e(LOG_TAG, "Could not perform permission check");
-        this.callback.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-      }
-    }
-    if (!this.hasPermissions()) {
-      PermissionHelper.requestPermissions(this, 0, HotSpotPlugin.permissions);
-      return true;
-    } else {
-      // pre Android 6 behaviour
-      return executeInternal(action, rawArgs, callback);
-    }
+    
+    // Since our scanners are on version 4, no need to check for GPS permission. It does not become a requirement
+    // for WiFi scanning until Android version 6.
+    return executeInternal(action, rawArgs, callback);
     // Returning false results in a "MethodNotFound" error.
-  }
-
-  public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults)
-      throws JSONException {
-    for (int r : grantResults) {
-      if (r == PackageManager.PERMISSION_DENIED) {
-        this.callback.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-        return;
-      }
-    }
-    executeInternal(this.action, this.rawArgs, this.callback);
   }
 
   private void requestWriteSettings(CallbackContext callback) {
@@ -165,9 +118,8 @@ public class HotSpotPlugin extends CordovaPlugin {
   }
 
   private boolean executeInternal(String action, String rawArgs, CallbackContext callback) {
-    Log.i(LOG_TAG, "Running executeInternal() ");
-    Log.i(LOG_TAG, "     action: " + action);
-    Log.i(LOG_TAG, "     rawArgs: " + rawArgs);
+    Log.i(LOG_TAG, "Running executeInternal(), action: " + action + ", rawArgs: " + rawArgs);
+
     if ("requestWriteSettings".equals(action)) {
       threadhelper(new HotspotFunction() {
         @Override
@@ -589,6 +541,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       result.put("linkSpeed", wifiInfo.getLinkSpeed());
       result.put("IPAddress", intToInetAddress(wifiInfo.getIpAddress())).toString();
       result.put("networkID", wifiInfo.getNetworkId());
+      result.put("MACAddress", wifiInfo.getMacAddress());
       callback.success(result);
     } catch (JSONException e) {
       Log.e(LOG_TAG, "Error during reading connection info.", e);
@@ -705,27 +658,32 @@ public class HotSpotPlugin extends CordovaPlugin {
     try {
       Log.i(LOG_TAG, "   Starting WiFi scan.");
       WifiHotSpots hotspot = new WifiHotSpots(activity);
+
       if (isHotspotEnabled()) {
         hotspot.startHotSpot(false);
         Thread.sleep(3000);
       }
+
       if (!isWifiOn()) {
         toggleWifi();
         Thread.sleep(2000);
       }
+
       List<ScanResult> response = getScanResult(hotspot, sortByLevel);
       // if null wait and try again
       if (response == null || response.size() == 0) {
         response = getScanResult(hotspot, sortByLevel);
       }
+
       JSONArray results = new JSONArray();
+
       if (response != null && response.size() > 0) {
         for (ScanResult scanResult : response) {
           JSONObject result = new JSONObject();
           result.put("SSID", scanResult.SSID);
           result.put("BSSID", scanResult.BSSID);
           result.put("frequency", scanResult.frequency);
-          result.put("level", scanResult.level);
+          result.put("level", WifiManager.calculateSignalLevel(scanResult.level, 3));
           result.put("capabilities", scanResult.capabilities);
           results.put(result);
         }
