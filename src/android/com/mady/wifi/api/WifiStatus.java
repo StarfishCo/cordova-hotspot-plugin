@@ -256,7 +256,7 @@ public class WifiStatus {
      * @return true if device connect to Internet or return false if not
      */
     public boolean isConnectedToInternet() {
-        return pingCmd("www.google.com");
+        return pingCmd("api.raven.com");
     }
 
     /**
