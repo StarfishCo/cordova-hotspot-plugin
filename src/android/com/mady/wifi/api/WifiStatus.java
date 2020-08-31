@@ -262,7 +262,7 @@ public class WifiStatus {
             NetworkInfo info = connectivity.getActiveNetworkInfo();
             if (info != null) {
                 if (info.isConnected()) {
-                    return pingCmd("www.google.com");
+                    return pingCmd("api.raven.com");
                 }
             }
         }
