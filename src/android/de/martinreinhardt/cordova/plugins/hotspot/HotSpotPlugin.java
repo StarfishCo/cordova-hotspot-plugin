@@ -978,7 +978,7 @@ public class HotSpotPlugin extends CordovaPlugin {
         if (gateway != null && gateway.length() > 0) {
           setGateway(InetAddress.getByName(gateway), wifiConf);
         }
-        InetAddress[] dnses = new InetAddress[2]
+        InetAddress[] dnses = new InetAddress[2];
         if (dns1 != null && dns1.length() > 0) {
           dnses[0] = InetAddress.getByName(dns1);
         }
