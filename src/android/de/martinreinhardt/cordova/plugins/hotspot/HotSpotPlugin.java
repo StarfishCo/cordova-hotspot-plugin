@@ -42,7 +42,19 @@ import android.util.Log;
 import com.mady.wifi.api.WifiAddresses;
 import com.mady.wifi.api.WifiHotSpots;
 import com.mady.wifi.api.WifiStatus;
+import java.lang.Class;
+import java.lang.ClassNotFoundException;
+import java.lang.IllegalAccessException;
+import java.lang.IllegalArgumentException;
+import java.lang.InstantiationException;
+import java.lang.NoSuchFieldException;
+import java.lang.NoSuchMethodException;
+import java.lang.Object;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.SecurityException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -453,6 +465,16 @@ public class HotSpotPlugin extends CordovaPlugin {
         @Override
         public void run(JSONArray args, CallbackContext callback) throws Exception {
           connectToWifi(args, callback);
+        }
+      }, rawArgs, callback);
+      return true;
+    }
+
+    if ("setIpConfig".equals(action)) {
+      threadhelper(new HotspotFunction() {
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          setIpConfig(args, callback);
         }
       }, rawArgs, callback);
       return true;
@@ -911,6 +933,151 @@ public class HotSpotPlugin extends CordovaPlugin {
     final String password = args.getString(1);
     return connectToWifiNetwork(pCallback, ssid, password, null, null);
   }
+
+  /**
+   * **********************************
+   * ******* STATIC IP - START ********
+   * **********************************
+   */
+
+  public boolean setIpConfig(JSONArray args, CallbackContext pCallback) throws JSONException {
+    // Get new settings from args
+    final String ipAddressing = args.getString(0);
+    final String ipAddress = args.getString(1);
+    final String gateway = args.getString(2);
+    int prefixLength;
+    try {
+      prefixLength = Integer.parseInt(args.getString(3));
+    } catch (NumberFormatException e) {
+      prefixLength = 24;
+    }
+    final int networkPrefixLength = prefixLength;
+    final String dns1 = args.getString(4);
+    final String dns2 = args.getString(5);
+
+    // Get connected network config
+    WifiConfiguration wifiConf = null;
+    WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
+        .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    WifiInfo connectionInfo = wifiManager.getConnectionInfo();
+    List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();        
+    for (WifiConfiguration conf : configuredNetworks){
+        if (conf.networkId == connectionInfo.getNetworkId()){
+            wifiConf = conf;
+            break;
+        }
+    }
+
+    // Apply new config
+    try {
+      if ("STATIC".equals(ipAddressing)) {
+        setIpAssignment("STATIC", wifiConf);
+        if (ipAddress != null && ipAddress.length() > 0) {
+          setIpAddress(InetAddress.getByName(ipAddress), networkPrefixLength, wifiConf);
+        }
+        if (gateway != null && gateway.length() > 0) {
+          setGateway(InetAddress.getByName(gateway), wifiConf);
+        }
+        InetAddress[] dnses = new InetAddress[2]
+        if (dns1 != null && dns1.length() > 0) {
+          dnses[0] = InetAddress.getByName(dns1);
+        }
+        if (dns2 != null && dns2.length() > 0) {
+          dnses[1] = InetAddress.getByName(dns2);
+        }
+        setDNSes(dnses, wifiConf);
+      } else {
+        setIpAssignment("DHCP", wifiConf);
+      }
+      wifiManager.updateNetwork(wifiConf);
+      wifiManager.saveConfiguration();
+      callback.success("New IP config was successfully set");
+    } catch(Exception e){
+      Log.e(LOG_TAG, "Set IP config failed", e);
+      callback.error("Set IP config failed");
+      return false;
+    }
+    return true;
+  }
+
+  // STATIC IP HELPER FUNCTIONS --START
+
+  public static void setIpAssignment(String assign , WifiConfiguration wifiConf)
+  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException{
+      setEnumField(wifiConf, assign, "ipAssignment");     
+  }
+
+  public static void setIpAddress(InetAddress addr, int prefixLength, WifiConfiguration wifiConf)
+  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException,
+  NoSuchMethodException, ClassNotFoundException, InstantiationException, InvocationTargetException{
+      Object linkProperties = getField(wifiConf, "linkProperties");
+      if(linkProperties == null)return;
+      Class laClass = Class.forName("android.net.LinkAddress");
+      Constructor laConstructor = laClass.getConstructor(new Class[]{InetAddress.class, int.class});
+      Object linkAddress = laConstructor.newInstance(addr, prefixLength);
+
+      ArrayList mLinkAddresses = (ArrayList)getDeclaredField(linkProperties, "mLinkAddresses");
+      mLinkAddresses.clear();
+      mLinkAddresses.add(linkAddress);        
+  }
+
+  public static void setGateway(InetAddress gateway, WifiConfiguration wifiConf)
+  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException, 
+  ClassNotFoundException, NoSuchMethodException, InstantiationException, InvocationTargetException{
+      Object linkProperties = getField(wifiConf, "linkProperties");
+      if(linkProperties == null)return;
+      Class routeInfoClass = Class.forName("android.net.RouteInfo");
+      Constructor routeInfoConstructor = routeInfoClass.getConstructor(new Class[]{InetAddress.class});
+      Object routeInfo = routeInfoConstructor.newInstance(gateway);
+
+      ArrayList mRoutes = (ArrayList)getDeclaredField(linkProperties, "mRoutes");
+      mRoutes.clear();
+      mRoutes.add(routeInfo);
+  }
+
+  public static void setDNSes(InetAddress[] dnses, WifiConfiguration wifiConf)
+  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException{
+      Object linkProperties = getField(wifiConf, "linkProperties");
+      if(linkProperties == null)return;
+
+      ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>)getDeclaredField(linkProperties, "mDnses");
+      mDnses.clear();
+      for (int i = 0; i < 2; i++) {
+        if (dnses[i] != null) {
+          mDnses.add(dnses[i]);
+        }
+      }
+  }
+
+  public static Object getField(Object obj, String name)
+  throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException{
+      Field f = obj.getClass().getField(name);
+      Object out = f.get(obj);
+      return out;
+  }
+
+  public static Object getDeclaredField(Object obj, String name)
+  throws SecurityException, NoSuchFieldException,
+  IllegalArgumentException, IllegalAccessException {
+      Field f = obj.getClass().getDeclaredField(name);
+      f.setAccessible(true);
+      Object out = f.get(obj);
+      return out;
+  }  
+
+  private static void setEnumField(Object obj, String value, String name)
+  throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException{
+      Field f = obj.getClass().getField(name);
+      f.set(obj, Enum.valueOf((Class<Enum>) f.getType(), value));
+  }
+
+  // STATIC IP HELPER FUNCTIONS --END
+
+  /**
+   * **********************************
+   * ******** STATIC IP - END *********
+   * **********************************
+   */
 
   public boolean connectToWifiAuthEncrypt(JSONArray args, CallbackContext pCallback) throws JSONException {
     final String ssid = args.getString(0);

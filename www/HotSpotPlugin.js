@@ -262,6 +262,30 @@ HotSpotPlugin.prototype = {
             errorCB(err);
         }, "HotSpotPlugin", "connectToWifi", [ssid, password]);
     },
+
+    /**
+     * A callback function to be called when setting IP config was successful
+     *
+     * @callback setIpConfigCallback
+     */
+    /**
+     * Set IP config
+     *
+     * @param {string} ipAddressing // 'STATIC' | 'DHCP'
+     * @param {string} ipAddress
+     * @param {string} gateway
+     * @param {number} networkPrefixLength
+     * @param {string} dns1
+     * @param {string} dns2
+     * @param {setIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+    setIpConfig: function (ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2, successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "setIpConfig", [ipAddressing, ipAddress, gateway, networkPrefixLength.toString(), dns1, dns2]);
+    },
+
     /**
      * Determine if current connection is a captive portal
      *
