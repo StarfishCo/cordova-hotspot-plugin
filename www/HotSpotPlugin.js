@@ -287,6 +287,23 @@ HotSpotPlugin.prototype = {
     },
 
     /**
+     * IP configuration of the connected network
+     *
+     * @callback getIpConfigCallback
+     */
+    /**
+     * Get IP config
+     *
+     * @param {getIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+     getIpConfig: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "getIpConfig", []);
+    },
+
+    /**
      * Determine if current connection is a captive portal
      *
      * @param {connectToWifiCallback} successCB

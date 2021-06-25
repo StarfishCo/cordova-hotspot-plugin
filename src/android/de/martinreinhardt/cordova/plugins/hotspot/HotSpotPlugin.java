@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import java.net.InterfaceAddress;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.ScanResult;
@@ -475,6 +476,16 @@ public class HotSpotPlugin extends CordovaPlugin {
         @Override
         public void run(JSONArray args, CallbackContext callback) throws Exception {
           setIpConfig(args, callback);
+        }
+      }, rawArgs, callback);
+      return true;
+    }
+
+    if ("getIpConfig".equals(action)) {
+      threadhelper(new HotspotFunction() {
+        @Override
+        public void run(JSONArray args, CallbackContext callback) throws Exception {
+          getIpConfig(args, callback);
         }
       }, rawArgs, callback);
       return true;
@@ -940,7 +951,7 @@ public class HotSpotPlugin extends CordovaPlugin {
    * **********************************
    */
 
-  public boolean setIpConfig(JSONArray args, CallbackContext pCallback) throws JSONException {
+  public void setIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
     // Get new settings from args
     final String ipAddressing = args.getString(0);
     final String ipAddress = args.getString(1);
@@ -956,17 +967,7 @@ public class HotSpotPlugin extends CordovaPlugin {
     final String dns2 = args.getString(5);
 
     // Get connected network config
-    WifiConfiguration wifiConf = null;
-    WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
-        .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-    WifiInfo connectionInfo = wifiManager.getConnectionInfo();
-    List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();        
-    for (WifiConfiguration conf : configuredNetworks){
-        if (conf.networkId == connectionInfo.getNetworkId()){
-            wifiConf = conf;
-            break;
-        }
-    }
+    WifiConfiguration wifiConf = getConnectedNetworkConfig();
 
     // Apply new config
     try {
@@ -989,18 +990,88 @@ public class HotSpotPlugin extends CordovaPlugin {
       } else {
         setIpAssignment("DHCP", wifiConf);
       }
+      WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
+        .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
       wifiManager.updateNetwork(wifiConf);
       wifiManager.saveConfiguration();
       callback.success("New IP config was successfully set");
     } catch(Exception e){
       Log.e(LOG_TAG, "Set IP config failed", e);
       callback.error("Set IP config failed");
-      return false;
     }
-    return true;
+  }
+
+  public void getIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
+    try {
+      JSONObject result = new JSONObject();
+      // IP Addressing
+      WifiConfiguration wifiConf = getConnectedNetworkConfig();
+      if (wifiConf.toString().toLowerCase().indexOf("DHCP".toLowerCase()) > -1) {
+        result.put("ipAddressing", "DHCP");
+      } else if (wifiConf.toString().toLowerCase().indexOf("STATIC".toLowerCase()) > -1) {
+        result.put("ipAddressing", "STATIC");
+      }
+      // IP Address
+      WifiAddresses wifiAddresses = new WifiAddresses(this.cordova.getActivity());
+      String ipAddress = wifiAddresses.getDeviceIPAddress();
+      result.put("ipAddress", ipAddress);
+      // Gateway
+      String gateway = wifiAddresses.getGatewayIPAddress();
+      result.put("gateway", gateway);
+      // Network prefix length
+      InetAddress inetAddress = InetAddress.getByName(ipAddress);
+      NetworkInterface networkInterface = NetworkInterface.getByInetAddress(inetAddress);
+      short prefixLength = 0;
+      for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+        if (address.getAddress().getHostAddress().contains(ipAddress)) {
+          prefixLength = address.getNetworkPrefixLength();
+        }
+      }
+      if (prefixLength > 0) {
+        result.put("prefixLength", String.valueOf(prefixLength));
+      } else {
+        result.put("prefixLength", "");
+      }
+      // DNSes
+      Object linkProperties = getField(wifiConf, "linkProperties");
+      ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>)getDeclaredField(linkProperties, "mDnses");
+      // DNS 1
+      if (mDnses.size() > 0 && mDnses.get(0) != null) {
+        String dns1 = mDnses.get(0).getHostAddress();
+        result.put("dns1", dns1);
+      } else {
+        result.put("dns1", "");
+      }
+      // DNS 2
+      if (mDnses.size() > 1 && mDnses.get(1) != null) {
+        String dns2 = mDnses.get(1).getHostAddress();
+        result.put("dns2", dns2);
+      } else {
+        result.put("dns2", "");
+      }
+      callback.success(result);
+    } catch (Exception e) {
+      Log.e(LOG_TAG, "Get IP config failed", e);
+      callback.error("Get IP config failed");
+    }
   }
 
   // STATIC IP HELPER FUNCTIONS --START
+
+  public WifiConfiguration getConnectedNetworkConfig() {
+    WifiConfiguration wifiConf = null;
+    WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
+        .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+    WifiInfo connectionInfo = wifiManager.getConnectionInfo();
+    List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();        
+    for (WifiConfiguration conf : configuredNetworks){
+        if (conf.networkId == connectionInfo.getNetworkId()){
+            wifiConf = conf;
+            break;
+        }
+    }
+    return wifiConf;
+  }
 
   public static void setIpAssignment(String assign , WifiConfiguration wifiConf)
   throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException{
