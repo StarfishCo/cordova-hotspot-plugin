@@ -994,6 +994,7 @@ public class HotSpotPlugin extends CordovaPlugin {
         .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
       wifiManager.updateNetwork(wifiConf);
       wifiManager.saveConfiguration();
+      wifiManager.reassociate();
       callback.success("New IP config was successfully set");
     } catch(Exception e){
       Log.e(LOG_TAG, "Set IP config failed", e);
