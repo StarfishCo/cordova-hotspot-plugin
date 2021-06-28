@@ -1006,10 +1006,10 @@ public class HotSpotPlugin extends CordovaPlugin {
       JSONObject result = new JSONObject();
       // IP Addressing
       WifiConfiguration wifiConf = getConnectedNetworkConfig();
-      if (wifiConf.toString().toLowerCase().indexOf("DHCP".toLowerCase()) > -1) {
-        result.put("ipAddressing", "DHCP");
-      } else if (wifiConf.toString().toLowerCase().indexOf("STATIC".toLowerCase()) > -1) {
+      if (wifiConf.toString().toLowerCase().indexOf("STATIC".toLowerCase()) > -1) {
         result.put("ipAddressing", "STATIC");
+      } else {
+        result.put("ipAddressing", "DHCP");
       }
       // IP Address
       WifiAddresses wifiAddresses = new WifiAddresses(this.cordova.getActivity());
