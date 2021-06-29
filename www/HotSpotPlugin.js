@@ -287,6 +287,28 @@ HotSpotPlugin.prototype = {
     },
 
     /**
+     * A callback function to be called when setting ethernet IP config was successful
+     *
+     * @callback setEthernetIpConfigCallback
+     */
+    /**
+     * Set ethernet IP config
+     *
+     * @param {string} ipAddressing // 'STATIC' | 'DHCP'
+     * @param {string} ipAddress
+     * @param {string} gateway
+     * @param {string} subnetMask
+     * @param {string} dns1
+     * @param {setEthernetIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+     setEthernetIpConfig: function (ipAddressing, ipAddress, gateway, subnetMask, dns1, successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "setEthernetIpConfig", [ipAddressing, ipAddress, gateway, subnetMask, dns1]);
+    },
+
+    /**
      * IP configuration of the connected network
      *
      * @callback getIpConfigCallback
@@ -301,6 +323,23 @@ HotSpotPlugin.prototype = {
         cordova.exec(successCB, function (err) {
             errorCB(err);
         }, "HotSpotPlugin", "getIpConfig", []);
+    },
+
+     /**
+     * IP configuration of the connected ethernet network
+     *
+     * @callback getEthernetIpConfig
+     */
+    /**
+     * Get ethernet IP config
+     *
+     * @param {getEthernetIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+     getEthernetIpConfig: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "getEthernetIpConfig", []);
     },
 
     /**
