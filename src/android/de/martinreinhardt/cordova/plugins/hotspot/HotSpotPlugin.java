@@ -43,6 +43,8 @@ import android.util.Log;
 import com.mady.wifi.api.WifiAddresses;
 import com.mady.wifi.api.WifiHotSpots;
 import com.mady.wifi.api.WifiStatus;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.Class;
 import java.lang.ClassNotFoundException;
 import java.lang.IllegalAccessException;
@@ -51,10 +53,12 @@ import java.lang.InstantiationException;
 import java.lang.NoSuchFieldException;
 import java.lang.NoSuchMethodException;
 import java.lang.Object;
+import java.lang.Process;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.Runtime;
 import java.lang.SecurityException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -1179,26 +1183,71 @@ public class HotSpotPlugin extends CordovaPlugin {
     final String ipAddress = args.getString(1);
     final String gateway = args.getString(2);
     final String subnetMask = args.getString(3);
-    final String dns1 = args.getString(4);
+    // final String dns1 = args.getString(4);
+    try {
+      if ("STATIC".equals(ipAddressing)) {
+        executeCommand("su -c ifconfig eth0 "+ipAddress+" netmask "+subnetMask+" up");
+        executeCommand("route add default gw "+gateway+" dev eth0");
+      } else {
+        executeCommand("su -c ifconfig eth0 dhcp start");
+      }
+      callback.success("New ethernet IP config was successfully set");
+    } catch (Exception e) {
+      Log.e(LOG_TAG, "Set ethernet IP config failed", e);
+      callback.error("Set ethernet IP config failed");
+    }
   }
 
   public void getEthernetIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
     try {
       JSONObject result = new JSONObject();
       // IP Addressing
-    
+      result.put("ipAddressing", "");
       // IP Address
-  
+      NetworkInterface networkInterface = NetworkInterface.getByName("eth0");
+      if(networkInterface != null){
+        List<InetAddress> addresses = Collections.list(networkInterface.getInetAddresses());
+        for(InetAddress address: addresses){
+          if(address instanceof Inet4Address){
+            result.put("ipAddress", address.getHostAddress().toUpperCase());
+          }
+        }
+      }
       // Gateway
- 
+      String gateway = executeCommand("getprop dhcp.eth0.gateway");
+      result.put("gateway", gateway);
       // Subnet mask
-
+      String subnetMask = executeCommand("getprop dhcp.eth0.mask");
+      result.put("subnetMask", subnetMask);
       // DNS
-
+      String dns = executeCommand("getprop dhcp.eth0.dns1");
+      result.put("dns1", dns);
       callback.success(result);
     } catch (Exception e) {
       Log.e(LOG_TAG, "Get ethernet IP config failed", e);
       callback.error("Get ethernet IP config failed");
+    }
+  }
+
+  public static String executeCommand(String command) {
+    Process cmdProcess = null;
+    BufferedReader reader = null;
+    String dnsIP = "";
+    try {
+      cmdProcess = Runtime.getRuntime().exec(command);
+      reader = new BufferedReader(new InputStreamReader(cmdProcess.getInputStream()));
+      dnsIP = reader.readLine();
+      return dnsIP;
+    } catch (Exception e) {
+      Log.e(LOG_TAG, "Get ethernet info failed", e);
+      return null;
+    } finally {
+        try {
+          reader.close();
+        } catch (Exception e) {
+          Log.e(LOG_TAG, "Close reader failed for executeCommand()", e);
+        }
+      cmdProcess.destroy();
     }
   }
 
