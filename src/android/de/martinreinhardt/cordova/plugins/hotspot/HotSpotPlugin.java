@@ -481,31 +481,11 @@ public class HotSpotPlugin extends CordovaPlugin {
       return true;
     }
 
-    if ("setEthernetIpConfig".equals(action)) {
-      threadhelper(new HotspotFunction() {
-        @Override
-        public void run(JSONArray args, CallbackContext callback) throws Exception {
-          setEthernetIpConfig(args, callback);
-        }
-      }, rawArgs, callback);
-      return true;
-    }
-
     if ("getIpConfig".equals(action)) {
       threadhelper(new HotspotFunction() {
         @Override
         public void run(JSONArray args, CallbackContext callback) throws Exception {
           getIpConfig(args, callback);
-        }
-      }, rawArgs, callback);
-      return true;
-    }
-
-    if ("getEthernetIpConfig".equals(action)) {
-      threadhelper(new HotspotFunction() {
-        @Override
-        public void run(JSONArray args, CallbackContext callback) throws Exception {
-          getEthernetIpConfig(args, callback);
         }
       }, rawArgs, callback);
       return true;
@@ -967,7 +947,7 @@ public class HotSpotPlugin extends CordovaPlugin {
 
   /**
    * **********************************
-   * *** STATIC IP - WI-FI - START ****
+   * ******* STATIC IP - START ********
    * **********************************
    */
 
@@ -1077,6 +1057,8 @@ public class HotSpotPlugin extends CordovaPlugin {
     }
   }
 
+  // STATIC IP HELPER FUNCTIONS --START
+
   public WifiConfiguration getConnectedNetworkConfig() {
     WifiConfiguration wifiConf = null;
     WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
@@ -1161,50 +1143,11 @@ public class HotSpotPlugin extends CordovaPlugin {
       f.set(obj, Enum.valueOf((Class<Enum>) f.getType(), value));
   }
 
+  // STATIC IP HELPER FUNCTIONS --END
+
   /**
    * **********************************
-   * **** STATIC IP - WI-FI - END *****
-   * **********************************
-   */
-
-   /**
-   * **********************************
-   * ** STATIC IP - ETHERNET - START **
-   * **********************************
-   */
-
-  public void setEthernetIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
-    // Get new settings from args
-    final String ipAddressing = args.getString(0);
-    final String ipAddress = args.getString(1);
-    final String gateway = args.getString(2);
-    final String subnetMask = args.getString(3);
-    final String dns1 = args.getString(4);
-  }
-
-  public void getEthernetIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
-    try {
-      JSONObject result = new JSONObject();
-      // IP Addressing
-    
-      // IP Address
-  
-      // Gateway
- 
-      // Subnet mask
-
-      // DNS
-
-      callback.success(result);
-    } catch (Exception e) {
-      Log.e(LOG_TAG, "Get ethernet IP config failed", e);
-      callback.error("Get ethernet IP config failed");
-    }
-  }
-
-   /**
-   * **********************************
-   * *** STATIC IP - ETHERNET - END ***
+   * ******** STATIC IP - END *********
    * **********************************
    */
 
@@ -1361,7 +1304,6 @@ public class HotSpotPlugin extends CordovaPlugin {
       cb.error(e.getMessage());
     }
   }
-
   private boolean isConnectedToWifi() {
     WifiStatus wu = new WifiStatus(this.cordova.getActivity());
     return wu.checkWifi(wu.DATA_BY_WIFI);
