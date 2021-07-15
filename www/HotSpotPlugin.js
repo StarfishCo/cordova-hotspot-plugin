@@ -252,16 +252,72 @@ HotSpotPlugin.prototype = {
      *      SSID to connect
      * @param {string} password
      *      password to use
+     * @param {string} ipAddressing
+     *      'STATIC' | 'DHCP'
+     * @param {string} ipAddress
+     *      ipv4 or ipv6 address
+     * @param {string} gateway
+     *      router address
+     * @param {number} networkPrefixLength
+     *      0 - 128
+     * @param {string} dns1
+     *      domain name system 1
+     * @param {string} dns2
+     *      domain name system 2
      * @param {connectToWifiCallback} successCB
      *      A callback function to be called when connected successful
      * @param {errorCallback} errorCB
      *      A callback function to be called when connection was not successful
      */
-    connectToWifi: function (ssid, password, successCB, errorCB) {
+    connectToWifi: function (ssid, password,
+        ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2,
+        successCB, errorCB) {
         cordova.exec(successCB, function (err) {
             errorCB(err);
-        }, "HotSpotPlugin", "connectToWifi", [ssid, password]);
+        }, "HotSpotPlugin", "connectToWifi", [ssid, password,
+            ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2]);
     },
+
+    /**
+     * A callback function to be called when setting IP config was successful
+     *
+     * @callback setIpConfigCallback
+     */
+    /**
+     * Set IP config
+     *
+     * @param {string} ipAddressing // 'STATIC' | 'DHCP'
+     * @param {string} ipAddress
+     * @param {string} gateway
+     * @param {number} networkPrefixLength
+     * @param {string} dns1
+     * @param {string} dns2
+     * @param {setIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+    setIpConfig: function (ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2, successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "setIpConfig", [ipAddressing, ipAddress, gateway, networkPrefixLength.toString(), dns1, dns2]);
+    },
+
+    /**
+     * IP configuration of the connected network
+     *
+     * @callback getIpConfigCallback
+     */
+    /**
+     * Get IP config
+     *
+     * @param {getIpConfigCallback} successCB
+     * @param {errorCallback} errorCB
+     */
+     getIpConfig: function (successCB, errorCB) {
+        cordova.exec(successCB, function (err) {
+            errorCB(err);
+        }, "HotSpotPlugin", "getIpConfig", []);
+    },
+
     /**
      * Determine if current connection is a captive portal
      *

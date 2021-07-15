@@ -38,6 +38,7 @@
     <source-file src="src/android/com/mady/wifi/api/WifiAddresses.java" target-dir="src/com/mady/wifi/api"/>
     <source-file src="src/android/com/mady/wifi/api/WifiHotSpots.java" target-dir="src/com/mady/wifi/api"/>
     <source-file src="src/android/com/mady/wifi/api/WifiStatus.java" target-dir="src/com/mady/wifi/api"/>
+    <source-file src="src/android/com/mady/wifi/api/WifiStaticIP.java" target-dir="src/com/mady/wifi/api"/>
     <source-file src="src/android/com/mady/wifi/datatransfer/DataUsage.java" target-dir="src/com/mady/wifi/datatransfer"/>
     <source-file src="src/android/com/mady/wifi/datatransfer/NetworkStats.java" target-dir="src/com/mady/wifi/datatransfer"/>
     <source-file src="src/android/com/mady/wifi/datatransfer/SimpleAsynTask.java" target-dir="src/com/mady/wifi/datatransfer"/>
