@@ -42,6 +42,7 @@ import android.provider.Settings;
 import android.util.Log;
 import com.mady.wifi.api.WifiAddresses;
 import com.mady.wifi.api.WifiHotSpots;
+import com.mady.wifi.api.WifiStaticIP;
 import com.mady.wifi.api.WifiStatus;
 import java.lang.Class;
 import java.lang.ClassNotFoundException;
@@ -663,7 +664,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       if (hotspot.setHotSpot(ssid, mode, password)) {
         callback.success();
       } else {
-        callback.error("Hotspot config was not successfull");
+        callback.error("Hotspot config was not successful");
       }
     } else {
       callback.error("Hotspot not enabled");
@@ -942,7 +943,35 @@ public class HotSpotPlugin extends CordovaPlugin {
   public boolean connectToWifi(JSONArray args, CallbackContext pCallback) throws JSONException {
     final String ssid = args.getString(0);
     final String password = args.getString(1);
-    return connectToWifiNetwork(pCallback, ssid, password, null, null);
+    
+    String ipAddressing;
+    String ipAddress;
+    String gateway;
+    int networkPrefixLength;
+    String dns1;
+    String dns2;
+
+    try {
+      ipAddressing = args.getString(2);
+      ipAddress = args.getString(3);
+      gateway = args.getString(4);
+      try {
+        networkPrefixLength = Integer.parseInt(args.getString(5));
+      } catch (NumberFormatException e) {
+        networkPrefixLength = 24;
+      }
+      dns1 = args.getString(4);
+      dns2 = args.getString(5);
+    } catch (Exception e) {
+      ipAddressing = "DHCP";
+      ipAddress = "";
+      gateway = "";
+      networkPrefixLength = 24;
+      dns1 = "";
+      dns2 = "";
+    }
+    return connectToWifiNetwork(pCallback, ssid, password, null, null,
+      ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2);
   }
 
   /**
@@ -969,15 +998,16 @@ public class HotSpotPlugin extends CordovaPlugin {
 
       // Get connected network config
       WifiConfiguration wifiConf = getConnectedNetworkConfig();
+      WifiStaticIP wifiStaticIP = new WifiStaticIP();
 
       // Apply new config
       if ("STATIC".equals(ipAddressing)) {
-        setIpAssignment("STATIC", wifiConf);
+        wifiStaticIP.setIpAssignment("STATIC", wifiConf);
         if (ipAddress != null && ipAddress.length() > 0) {
-          setIpAddress(InetAddress.getByName(ipAddress), networkPrefixLength, wifiConf);
+          wifiStaticIP.setIpAddress(InetAddress.getByName(ipAddress), networkPrefixLength, wifiConf);
         }
         if (gateway != null && gateway.length() > 0) {
-          setGateway(InetAddress.getByName(gateway), wifiConf);
+          wifiStaticIP.setGateway(InetAddress.getByName(gateway), wifiConf);
         }
         InetAddress[] dnses = new InetAddress[2];
         if (dns1 != null && dns1.length() > 0) {
@@ -986,9 +1016,9 @@ public class HotSpotPlugin extends CordovaPlugin {
         if (dns2 != null && dns2.length() > 0) {
           dnses[1] = InetAddress.getByName(dns2);
         }
-        setDNSes(dnses, wifiConf);
+        wifiStaticIP.setDNSes(dnses, wifiConf);
       } else {
-        setIpAssignment("DHCP", wifiConf);
+        wifiStaticIP.setIpAssignment("DHCP", wifiConf);
       }
       WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
         .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -1034,8 +1064,9 @@ public class HotSpotPlugin extends CordovaPlugin {
         result.put("prefixLength", "");
       }
       // DNSes
-      Object linkProperties = getField(wifiConf, "linkProperties");
-      ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>)getDeclaredField(linkProperties, "mDnses");
+      WifiStaticIP wifiStaticIP = new WifiStaticIP();
+      Object linkProperties = wifiStaticIP.getField(wifiConf, "linkProperties");
+      ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>)wifiStaticIP.getDeclaredField(linkProperties, "mDnses");
       // DNS 1
       if (mDnses.size() > 0 && mDnses.get(0) != null) {
         String dns1 = mDnses.get(0).getHostAddress();
@@ -1057,8 +1088,6 @@ public class HotSpotPlugin extends CordovaPlugin {
     }
   }
 
-  // STATIC IP HELPER FUNCTIONS --START
-
   public WifiConfiguration getConnectedNetworkConfig() {
     WifiConfiguration wifiConf = null;
     WifiManager wifiManager = (WifiManager) this.cordova.getActivity().getApplication()
@@ -1073,77 +1102,6 @@ public class HotSpotPlugin extends CordovaPlugin {
     }
     return wifiConf;
   }
-
-  public static void setIpAssignment(String assign , WifiConfiguration wifiConf)
-  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException{
-      setEnumField(wifiConf, assign, "ipAssignment");     
-  }
-
-  public static void setIpAddress(InetAddress addr, int prefixLength, WifiConfiguration wifiConf)
-  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException,
-  NoSuchMethodException, ClassNotFoundException, InstantiationException, InvocationTargetException{
-      Object linkProperties = getField(wifiConf, "linkProperties");
-      if(linkProperties == null)return;
-      Class laClass = Class.forName("android.net.LinkAddress");
-      Constructor laConstructor = laClass.getConstructor(new Class[]{InetAddress.class, int.class});
-      Object linkAddress = laConstructor.newInstance(addr, prefixLength);
-
-      ArrayList mLinkAddresses = (ArrayList)getDeclaredField(linkProperties, "mLinkAddresses");
-      mLinkAddresses.clear();
-      mLinkAddresses.add(linkAddress);        
-  }
-
-  public static void setGateway(InetAddress gateway, WifiConfiguration wifiConf)
-  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException, 
-  ClassNotFoundException, NoSuchMethodException, InstantiationException, InvocationTargetException{
-      Object linkProperties = getField(wifiConf, "linkProperties");
-      if(linkProperties == null)return;
-      Class routeInfoClass = Class.forName("android.net.RouteInfo");
-      Constructor routeInfoConstructor = routeInfoClass.getConstructor(new Class[]{InetAddress.class});
-      Object routeInfo = routeInfoConstructor.newInstance(gateway);
-
-      ArrayList mRoutes = (ArrayList)getDeclaredField(linkProperties, "mRoutes");
-      mRoutes.clear();
-      mRoutes.add(routeInfo);
-  }
-
-  public static void setDNSes(InetAddress[] dnses, WifiConfiguration wifiConf)
-  throws SecurityException, IllegalArgumentException, NoSuchFieldException, IllegalAccessException{
-      Object linkProperties = getField(wifiConf, "linkProperties");
-      if(linkProperties == null)return;
-
-      ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>)getDeclaredField(linkProperties, "mDnses");
-      mDnses.clear();
-      for (int i = 0; i < 2; i++) {
-        if (dnses[i] != null) {
-          mDnses.add(dnses[i]);
-        }
-      }
-  }
-
-  public static Object getField(Object obj, String name)
-  throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException{
-      Field f = obj.getClass().getField(name);
-      Object out = f.get(obj);
-      return out;
-  }
-
-  public static Object getDeclaredField(Object obj, String name)
-  throws SecurityException, NoSuchFieldException,
-  IllegalArgumentException, IllegalAccessException {
-      Field f = obj.getClass().getDeclaredField(name);
-      f.setAccessible(true);
-      Object out = f.get(obj);
-      return out;
-  }  
-
-  private static void setEnumField(Object obj, String value, String name)
-  throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException{
-      Field f = obj.getClass().getField(name);
-      f.set(obj, Enum.valueOf((Class<Enum>) f.getType(), value));
-  }
-
-  // STATIC IP HELPER FUNCTIONS --END
 
   /**
    * **********************************
@@ -1178,15 +1136,18 @@ public class HotSpotPlugin extends CordovaPlugin {
       authAlgorihm = WifiConfiguration.AuthAlgorithm.OPEN;
     }
     return connectToWifiNetwork(pCallback, ssid, password, authAlgorihm,
-        encryptions.toArray(new Integer[encryptions.size()]));
+        encryptions.toArray(new Integer[encryptions.size()]),
+        null, null, null, 24, null, null);
   }
 
   private boolean connectToWifiNetwork(final CallbackContext callback, final String ssid, final String password,
-    final Integer authentication, final Integer[] encryption) {
+    final Integer authentication, final Integer[] encryption,
+    String ipAddressing, String ipAddress, String gateway, int networkPrefixLength, String dns1, String dns2) {
     final Activity activity = this.cordova.getActivity();
     WifiHotSpots hotspot = new WifiHotSpots(activity);
     try {
-      if (hotspot.connectToHotspot(ssid, password, authentication, encryption)) {
+      if (hotspot.connectToHotspot(ssid, password, authentication, encryption, 
+        ipAddressing, ipAddress, gateway, networkPrefixLength, dns1, dns2)) {
         int retry = 130;
         boolean connected = false;
         // Wait to connect
@@ -1196,12 +1157,12 @@ public class HotSpotPlugin extends CordovaPlugin {
           Thread.sleep(100);
         }
         if (connected) {
-          callback.success("Connection was successfull");
+          callback.success("Connection was successful");
         } else {
-          callback.error("Connection was not successfull");
+          callback.error("Connection was not successful");
         }
       } else {
-        callback.error("Connection was not successfull");
+        callback.error("Connection was not successful");
       }
     } catch (Exception e) {
       Log.e(LOG_TAG, "Got unknown error during hotspot connect", e);

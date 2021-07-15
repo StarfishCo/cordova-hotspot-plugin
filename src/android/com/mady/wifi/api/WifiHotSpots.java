@@ -16,9 +16,11 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.util.Log;
+import com.mady.wifi.api.WifiStaticIP;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -91,13 +93,20 @@ public class WifiHotSpots {
     /**
      * Method for Connecting  to WiFi Network (hotspot)
      *
-     * @param netSSID        of WiFi Network (hotspot)
-     * @param netPass        put password or  "" for open network
-     * @param authentication (optional) authentication algorithm to use
-     * @param encryptions    (optional) set group ciphers. @see <a href="http://developer.android.com/reference/android/net/wifi/WifiConfiguration.AuthAlgorithm.html">WifiConfiguration.AuthAlgorithm</a>
+     * @param netSSID               of WiFi Network (hotspot)
+     * @param netPass               put password or  "" for open network
+     * @param ipAddressing          "DHCP" or "STATIC", otherwise IP settings will be ignored
+     * @param ipAddress             ipv4 or ipv6 address
+     * @param gateway               router address
+     * @param networkPrefixLength   0 - 128
+     * @param dns1                  domain name system 1
+     * @param dns2                  domain name system 2
+     * @param authentication        (optional) authentication algorithm to use
+     * @param encryptions           (optional) set group ciphers. @see <a href="http://developer.android.com/reference/android/net/wifi/WifiConfiguration.AuthAlgorithm.html">WifiConfiguration.AuthAlgorithm</a>
      * @return true if connected to hotspot successfully @see <a href="http://developer.android.com/reference/android/net/wifi/WifiConfiguration.GroupCipher.html">WifiConfiguration.GroupCipher</a>
      */
-    public boolean connectToHotspot(String netSSID, String netPass, Integer authentication, Integer[] encryptions) {
+    public boolean connectToHotspot(String netSSID, String netPass, Integer authentication, Integer[] encryptions,
+        String ipAddressing, String ipAddress, String gateway, int networkPrefixLength, String dns1, String dns2) {
 
         isConnectToHotSpotRunning = true;
         WifiConfiguration wifiConf = new WifiConfiguration();
@@ -178,6 +187,32 @@ public class WifiHotSpots {
                     if (result.SSID.contains(netSSID)) {
 
                         String mode = getSecurityMode(result);
+
+                        // Modify the IP settings, if necessary
+                        try {
+                            WifiStaticIP wifiStaticIP = new WifiStaticIP();
+                            if ("STATIC".equals(ipAddressing)) {
+                                Log.i(LOG_TAG, "Updating network configuration before connecting: STATIC");
+                                wifiStaticIP.setIpAssignment("STATIC", wifiConf);
+                                if (ipAddress != null && ipAddress.length() > 0) {
+                                  wifiStaticIP.setIpAddress(InetAddress.getByName(ipAddress), networkPrefixLength, wifiConf);
+                                }
+                                if (gateway != null && gateway.length() > 0) {
+                                  wifiStaticIP.setGateway(InetAddress.getByName(gateway), wifiConf);
+                                }
+                                InetAddress[] dnses = new InetAddress[2];
+                                if (dns1 != null && dns1.length() > 0) {
+                                  dnses[0] = InetAddress.getByName(dns1);
+                                }
+                                if (dns2 != null && dns2.length() > 0) {
+                                  dnses[1] = InetAddress.getByName(dns2);
+                                }
+                                wifiStaticIP.setDNSes(dnses, wifiConf);
+                            } else if ("DHCP".equals(ipAddressing)) {
+                                Log.i(LOG_TAG, "Updating network configuration before connecting: DHCP");
+                                wifiStaticIP.setIpAssignment("DHCP", wifiConf);
+                            } 
+                        } catch (Exception e) {}
 
                         if (mode.equalsIgnoreCase("OPEN")) {
                             Log.i(LOG_TAG, "Connecting to  hotspot with security: OPEN");
