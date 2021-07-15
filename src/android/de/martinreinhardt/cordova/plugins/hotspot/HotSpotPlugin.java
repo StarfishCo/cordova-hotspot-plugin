@@ -952,25 +952,25 @@ public class HotSpotPlugin extends CordovaPlugin {
    */
 
   public void setIpConfig(JSONArray args, CallbackContext callback) throws JSONException {
-    // Get new settings from args
-    final String ipAddressing = args.getString(0);
-    final String ipAddress = args.getString(1);
-    final String gateway = args.getString(2);
-    int prefixLength;
     try {
-      prefixLength = Integer.parseInt(args.getString(3));
-    } catch (NumberFormatException e) {
-      prefixLength = 24;
-    }
-    final int networkPrefixLength = prefixLength;
-    final String dns1 = args.getString(4);
-    final String dns2 = args.getString(5);
+      // Get new settings from args
+      final String ipAddressing = args.getString(0);
+      final String ipAddress = args.getString(1);
+      final String gateway = args.getString(2);
+      int prefixLength;
+      try {
+        prefixLength = Integer.parseInt(args.getString(3));
+      } catch (NumberFormatException e) {
+        prefixLength = 24;
+      }
+      final int networkPrefixLength = prefixLength;
+      final String dns1 = args.getString(4);
+      final String dns2 = args.getString(5);
 
-    // Get connected network config
-    WifiConfiguration wifiConf = getConnectedNetworkConfig();
+      // Get connected network config
+      WifiConfiguration wifiConf = getConnectedNetworkConfig();
 
-    // Apply new config
-    try {
+      // Apply new config
       if ("STATIC".equals(ipAddressing)) {
         setIpAssignment("STATIC", wifiConf);
         if (ipAddress != null && ipAddress.length() > 0) {
@@ -997,7 +997,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       wifiManager.reassociate();
       callback.success("New IP config was successfully set");
     } catch(Exception e){
-      Log.e(LOG_TAG, "Set IP config failed", e);
+      Log.e(LOG_TAG, "Set IP config failed: " + e.getMessage());
       callback.error("Set IP config failed");
     }
   }
@@ -1052,7 +1052,7 @@ public class HotSpotPlugin extends CordovaPlugin {
       }
       callback.success(result);
     } catch (Exception e) {
-      Log.e(LOG_TAG, "Get IP config failed", e);
+      Log.e(LOG_TAG, "Get IP config failed: " + e.getMessage());
       callback.error("Get IP config failed");
     }
   }
